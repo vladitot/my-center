@@ -1,39 +1,36 @@
 apiVersion: core.oam.dev/v1beta1
 kind: ComponentDefinition
 metadata:
-  name: simple-db
-  namespace: default
+  name: stateless
 spec:
   workload:
     definition:
       apiVersion: apps/v1
       kind: Deployment
   schematic:
-    kube:
-      template:
-        apiVersion: apps/v1
-        kind: Deployment
-        spec:
-          selector:
-            matchLabels:
-              app: nginx
-          template:
-            metadata:
-              labels:
-                app: nginx
-            spec:
-              containers:
-                - name: nginx
-                  ports:
-                    - containerPort: 80
-      parameters:
-        - name: image
-          required: true
-          type: string
-          fieldPaths:
-            - "spec.template.spec.containers[0].image"
-        - name: port
-          required: true
-          type: number
-          fieldPaths:
-            - "spec.template.spec.containers[0].ports.containerPort[0]"
+    cue:
+      template: |
+        parameter: {
+            name:  string
+            image: string
+        }
+        output: {
+            apiVersion: "apps/v1"
+            kind:       "Deployment"
+            spec: {
+                selector: matchLabels: {
+                    "app.oam.dev/component": parameter.name
+                }
+                template: {
+                    metadata: labels: {
+                        "app.oam.dev/component": parameter.name
+                    }
+                    spec: {
+                        containers: [{
+                            name:  parameter.name
+                            image: parameter.image
+                        }]
+                    }
+                }
+            }
+        }
